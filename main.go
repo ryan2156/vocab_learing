@@ -32,7 +32,9 @@ func main() {
 	// 單字庫相關路由
 	vocab := r.Group("/vocabularies")
 	{
-		vocab.GET("/public", handlers.GetPublicVocabularies) // 獲取公開單字庫 finished
+		vocab.GET("/public", handlers.GetPublicVocabularies)            // 獲取公開單字庫 finished
+		vocab.GET("/details/:vocab_id", handlers.GetVocabDetailHandler) // finished
+		vocab.GET("/search", handlers.SearchPublicVocabHandler)
 
 	}
 
@@ -40,9 +42,11 @@ func main() {
 	authorized := r.Group("/")
 	authorized.Use(handlers.AuthMiddleware())
 	{
-		authorized.GET("/profile", handlers.ProfileHandler)         // finished
-		authorized.POST("/addVocab", handlers.AddVocabularyHandler) // 新增單字 finished
-		authorized.POST("/addFavorite", handlers.AddFavoriteVocab)  // 收藏最愛單字
+		authorized.GET("/profile", handlers.ProfileHandler)                      // finished
+		authorized.POST("/addVocab", handlers.AddVocabularyHandler)              // 新增單字 finished
+		authorized.POST("/addFavorite", handlers.AddFavoriteVocab)               // 收藏最愛單字 finished
+		authorized.GET("/vocabularies/added_by", handlers.GetAuthorVocabularies) // finished 但是修改單字可以再優化
+		authorized.PUT("vocabularies/edit/:vocab_id", handlers.UpdateVocabulary) // finished
 	}
 
 	r.Run(":8888")

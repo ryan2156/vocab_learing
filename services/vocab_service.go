@@ -61,24 +61,26 @@ func AddFavoriteVocab(username any, vocabID int, added_Date string) error {
 }
 
 func GetPublicVocabularies() ([]models.Vocabulary_name, error) {
-	// 查询公开单字库，同时获取用户名
-	query := `
-		SELECT v.vocab_id, v.word, v.defination, p.name AS part_name, u.username AS added_by_name
-		FROM Vocabularies v
-		JOIN Users u ON v.added_by = u.user_id
-		JOIN Parts p ON v.part = p.part_id
-	`
+	// 查询 PublicVocabularies 视图
+	query := "SELECT vocab_id, word, defination, part_name, added_by_name, added_date FROM VW_PublicVocabs"
 	rows, err := db.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	// 解析数据库结果
 	var vocabularies []models.Vocabulary_name
 	for rows.Next() {
 		var vocab models.Vocabulary_name
-		if err := rows.Scan(&vocab.VocabID, &vocab.Word, &vocab.Defination, &vocab.Part, &vocab.AddedBy); err != nil {
+		err := rows.Scan(
+			&vocab.VocabID,
+			&vocab.Word,
+			&vocab.Defination,
+			&vocab.Part,
+			&vocab.AddedBy,
+			&vocab.AddedDate,
+		)
+		if err != nil {
 			return nil, err
 		}
 		vocabularies = append(vocabularies, vocab)
@@ -87,6 +89,65 @@ func GetPublicVocabularies() ([]models.Vocabulary_name, error) {
 	return vocabularies, nil
 }
 
-func GetVocabDetails() {
+func GetAuthorVocabularies(author string) ([]models.Vocabulary_name, error) {
+	query := `
+		SELECT 
+			vocab_id,
+			word,
+			defination,
+			part_name,
+			added_by_name, 
+			added_date 
+		FROM VW_PublicVocabs
+		WHERE added_by_name = @p1
+	`
+	rows, err := db.DB.Query(query, author)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var vocabularies []models.Vocabulary_name
+	for rows.Next() {
+		var vocab models.Vocabulary_name
+		err := rows.Scan(
+			&vocab.VocabID,
+			&vocab.Word,
+			&vocab.Defination,
+			&vocab.Part,
+			&vocab.AddedBy,
+			&vocab.AddedDate,
+		)
+		if err != nil {
+			return nil, err
+		}
+		vocabularies = append(vocabularies, vocab)
+	}
 
+	return vocabularies, nil
+}
+
+func GetVocabDetailByID(vocabID int) (*models.Vocabulary_name, error) {
+	query := `
+		SELECT vocab_id, word, definition, example_eng, example_zh, part_name, added_by_name, added_date 
+		FROM VocabDetails 
+		WHERE vocab_id = @p1
+	`
+	row := db.DB.QueryRow(query, vocabID)
+
+	var detail models.Vocabulary_name
+	err := row.Scan(
+		&detail.VocabID,
+		&detail.Word,
+		&detail.Defination,
+		&detail.Example_eng,
+		&detail.Example_zh,
+		&detail.Part,
+		&detail.AddedBy,
+		&detail.AddedDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &detail, nil
 }

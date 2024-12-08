@@ -148,3 +148,19 @@ func GetFavoriteVocabs(userID int) ([]models.Vocabulary_name, error) {
 
 	return favorites, nil
 }
+
+func UpdateVocabulary(vocabID int, vocab models.Vocabulary) error {
+	query := "EXEC UpdateVocabulary @VocabID, @Word, @Defination, @ExampleEng, @ExampleZh, @Part"
+	_, err := DB.Exec(query,
+		sql.Named("VocabID", vocabID),
+		sql.Named("Word", vocab.Word),
+		sql.Named("Defination", vocab.Defination),
+		sql.Named("ExampleEng", vocab.Example_eng),
+		sql.Named("ExampleZh", vocab.Example_zh),
+		sql.Named("Part", vocab.Part),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
