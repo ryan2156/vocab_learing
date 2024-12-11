@@ -18,7 +18,7 @@ func main() {
 
 	// 配置 CORS
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:8080", "http://10.221.3.165:8080"}, // 允許的前端地址
+		AllowOrigins:     []string{"http://localhost:8080"}, // 允許的前端地址
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -42,11 +42,13 @@ func main() {
 	authorized := r.Group("/")
 	authorized.Use(handlers.AuthMiddleware())
 	{
-		authorized.GET("/profile", handlers.ProfileHandler)                      // finished
-		authorized.POST("/addVocab", handlers.AddVocabularyHandler)              // 新增單字 finished
-		authorized.POST("/addFavorite", handlers.AddFavoriteVocab)               // 收藏最愛單字 finished
-		authorized.GET("/vocabularies/added_by", handlers.GetAuthorVocabularies) // finished 但是修改單字可以再優化
-		authorized.PUT("vocabularies/edit/:vocab_id", handlers.UpdateVocabulary) // finished
+		authorized.GET("/profile", handlers.ProfileHandler)                                   // finished
+		authorized.POST("/addVocab", handlers.AddVocabularyHandler)                           // 新增單字 finished / bug: 1 vocab add but two req get.
+		authorized.POST("/addFavorite", handlers.AddFavoriteVocab)                            // 收藏最愛單字 finished
+		authorized.GET("/vocabularies/added_by", handlers.GetAuthorVocabularies)              // finished 但是修改單字可以再優化
+		authorized.PUT("/vocabularies/edit/:vocab_id", handlers.UpdateVocabulary)             // finished
+		authorized.DELETE("/vocabularies/delete/:vocab_id", handlers.DeleteVocabularyHandler) // 刪除由自己新增的單字 // finished
+		authorized.DELETE("/favorite/:vocab_id", handlers.RemoveFavoriteHandler)              // 移除收藏的單字
 	}
 
 	r.Run(":8888")

@@ -233,3 +233,76 @@ func SearchPublicVocabHandler(c *gin.Context) {
 	// 返回結果
 	c.JSON(http.StatusOK, vocabularies)
 }
+
+// 刪除由自己新增的單字
+func DeleteVocabularyHandler(c *gin.Context) {
+	// 從上下文獲取用戶 ID
+	username, exists := c.Get("username") // 由 AuthMiddleware 設置
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授權操作"})
+		return
+	}
+
+	user, err := db.GetUserByUsername(username.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		return
+	}
+	userID := user.UserID
+
+	// 獲取單字 ID
+	vocabIDStr := c.Param("vocab_id")
+	vocabID, err := strconv.Atoi(vocabIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "無效的單字 ID"})
+		return
+	}
+
+	// 刪除單字（檢查是否由該用戶新增）
+	err = db.DeleteVocabulary(userID, vocabID)
+	if err != nil {
+		if err == models.ErrForbidden {
+			c.JSON(http.StatusForbidden, gin.H{"error": "您無權刪除此單字"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "刪除單字失敗"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "單字刪除成功"})
+}
+
+// 移除收藏的單字
+func RemoveFavoriteHandler(c *gin.Context) {
+	// 獲取用戶身份信息
+	username, exists := c.Get("username")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// 獲取 vocab_id 參數
+	vocabIDStr := c.Param("vocab_id")
+	vocabID, err := strconv.Atoi(vocabIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid vocabulary ID"})
+		return
+	}
+
+	// 從數據表查找用戶 ID
+	user, err := db.GetUserByUsername(username.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user"})
+		return
+	}
+
+	// 執行刪除操作
+	err = db.RemoveFavorite(user.UserID, vocabID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove favorite"})
+		return
+	}
+
+	// 成功回應
+	c.JSON(http.StatusOK, gin.H{"message": "Favorite removed successfully"})
+}

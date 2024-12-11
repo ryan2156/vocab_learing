@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"vocab_learing/models"
 
@@ -98,6 +99,7 @@ func InitDB() error {
 	return nil
 }
 
+// 從使用者名稱獲取資料
 func GetUserByUsername(username string) (*models.User, error) {
 	// 定義要返回的 User 結構體
 	var user models.User
@@ -162,5 +164,55 @@ func UpdateVocabulary(vocabID int, vocab models.Vocabulary) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func DeleteVocabulary(userID, vocabID int) error {
+	// 構建查詢語句，檢查單字是否屬於當前用戶
+	query := `
+		DELETE FROM Vocabularies
+		WHERE vocab_id = @p1 AND added_by = @p2
+	`
+
+	// 執行刪除操作
+	result, err := DB.Exec(query, vocabID, userID)
+	if err != nil {
+		return err
+	}
+
+	// 檢查刪除是否成功
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		ErrForbidden := errors.New("無權移除單字")
+		return ErrForbidden // 無權刪除，或者單字不存在
+	}
+
+	return nil
+}
+
+var ErrFavoriteNotFound = errors.New("favorite not found")
+
+func RemoveFavorite(userID, vocabID int) error {
+	query := `
+        DELETE FROM Favorite_Vocabs
+        WHERE user_id = @p1 AND vocab_id = @p2
+    `
+	result, err := DB.Exec(query, userID, vocabID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrFavoriteNotFound // 如果沒有刪除任何記錄
+	}
+
 	return nil
 }
